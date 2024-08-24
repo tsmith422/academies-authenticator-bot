@@ -128,7 +128,7 @@ async def on_message(message: Message) -> None:
     elif user_message == '!close':
         await message.delete()
         if username == 'tsmith422':
-            await disconnect()
+            await manual_disconnect()
         else:
             await log_event(f'[username] attempted to shut me down')
 
@@ -158,13 +158,12 @@ async def on_ready() -> None:
 @client.event
 async def on_disconnect() -> None:
     try:
-        await log_event(f'[{str(client.user)[:-5]}] is now disconnected from client')
+        await log_event(f'### [{str(client.user)[:-5]}] is now disconnected from client')
     except Exception as e:
         await log_event(f'{e}')
 
 
-async def disconnect() -> None:
-    await log_event(f'### [{str(client.user)[:-5]}] is now disconnected from client')
+async def manual_disconnect() -> None:
     await client.close()
 
 
