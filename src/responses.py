@@ -45,7 +45,7 @@ def check_verification(student_uin: str) -> bool:
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPES)
     client = gspread.authorize(creds)
     sheet = client.open("Test Student Data Sheet (Responses)").sheet1
-    student_uins = sheet.col_values(3)
+    student_uins = sheet.col_values(4)
 
     if student_uin in student_uins:
         return True

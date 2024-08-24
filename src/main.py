@@ -30,10 +30,8 @@ async def verify(message: Message, user_info: str) -> None:
     :return: None
     '''
     if not user_info:
-        print('(Message was empty because intents were not enabled probably)')
+        await log_event(f'(Message was empty because intents were not enabled probably)')
         return
-    # if is_private := user_message[0] == '?':
-    #     user_message = user_message[1:]
     try:
         response: str = get_verification(user_info)
         member: discord.Member = message.author
@@ -54,7 +52,6 @@ async def verify(message: Message, user_info: str) -> None:
         await message.channel.send(response, silent=True)
         await message.delete()
     except Exception as e:
-        print(e)
         await log_event(f'Could not verify [{message.author}] due to ``{str(e)[str(e).rindex(":") + 2:]}``')
 
 
@@ -67,7 +64,6 @@ async def set_nick(user: discord.Member, name: tuple[str, str]) -> None:
     :return: None
     '''
     nickname = ' '.join(name)
-    print(f'Changing {user} nickname to {nickname}')
     try:
         await user.edit(nick=nickname)
         await log_event(f'Changing [{user}] nickname to "{nickname}"')
@@ -127,8 +123,6 @@ async def on_message(message: Message) -> None:
     user_message: str = message.content
     channel: str = str(message.channel)
 
-    print(f'[{channel}] {username}: "{user_message}"')
-
     if channel == '✅︱verification':
         await verify(message, user_message)
     elif user_message == '!close':
@@ -154,8 +148,6 @@ async def log_event(event: str) -> None:
 # HANDLING STARTUP FOR BOT
 @client.event
 async def on_ready() -> None:
-    print(f'{client.user} is now running!')
-
     global bot_log
     bot_log = client.get_channel(bot_log_channel_id)
 
@@ -165,11 +157,10 @@ async def on_ready() -> None:
 # HANDLING DISCONNECTIONS
 @client.event
 async def on_disconnect() -> None:
-    print('Disconnecting from client')
     try:
         await log_event(f'[{str(client.user)[:-5]}] is now disconnected from client')
     except Exception as e:
-        print(e)
+        await log_event(f'{e}')
 
 
 async def disconnect() -> None:
