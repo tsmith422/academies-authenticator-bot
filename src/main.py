@@ -148,9 +148,9 @@ async def log_event(event: str) -> None:
 # HANDLING STARTUP FOR BOT
 @client.event
 async def on_ready() -> None:
+    await client.change_presence(activity=discord.Game('Verifying ✅'))
     global bot_log
     bot_log = client.get_channel(bot_log_channel_id)
-
     await log_event(f'### [{str(client.user)[:-5]}] is now running!')
 
 
