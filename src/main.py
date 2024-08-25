@@ -156,7 +156,7 @@ async def on_ready() -> None:
 
 # HANDLING DISCONNECTIONS
 @client.event
-async def on_disconnect() -> None:
+async def on_close() -> None:
     try:
         await log_event(f'### [{str(client.user)[:-5]}] is now disconnected from client')
     except Exception as e:
@@ -164,6 +164,10 @@ async def on_disconnect() -> None:
 
 
 async def manual_disconnect() -> None:
+    try:
+        await log_event(f'### [{str(client.user)[:-5]}] is now disconnected from client')
+    except Exception as e:
+        await log_event(f'{e}')
     await client.close()
 
 
