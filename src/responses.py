@@ -44,9 +44,7 @@ def check_verification(student_uin: str) -> bool:
     '''
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPES)
     client = gspread.authorize(creds)
-    sheet = client.open("Test Student Data Sheet (Responses)").sheet1
-    student_uins = sheet.col_values(4)
+    sheet = client.open("Texas A&M Engineering Academies Ambassadors Discord Access Form (Responses)").sheet1
+    student_uins = set(sheet.col_values(2)[1:])
 
-    if student_uin in student_uins:
-        return True
-    return False
+    return student_uin in student_uins
