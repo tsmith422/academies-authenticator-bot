@@ -17,11 +17,11 @@ While I had a decent amount of python knowledge, I had never created a discord b
 - The bot aims to automatically change roles of members who pay the fee so that officers do not have to continue manually assigning roles.
 
 ## How the bot works
-The bot solves this issue by utilizing the Google spreadsheets API:
+The bot solves this issue by utilizing the **Google spreadsheets API**:
 - Members fill out a form in order to conclude their admission in the organization.
 - Information from that form is saved on a spreadsheet.
 - The bot utilizes Google’s spreadsheet API to read through and confirm a user has gotten their information onto the spreadsheet, if the information matches then the user is verified.
-- By running on a rasbian comparable microcomputer, the bot can run full-time 24/7 with little to no latency issues.
+- By running on a ``rasbian comparable microcomputer``, the bot can run *full-time 24/7 with little to no latency issues.*
 
 This method works great because the API allows for real-time updates on the spreadsheet so anyone who fills out the form can immediately confirm their verification in the discord.
 
