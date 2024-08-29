@@ -2,9 +2,10 @@
 A bot programmed using python in order to authenticate engineering academy org members to give them access to the full discord.<br><br>
 
 <div align="center">
-  <img src="https://github.com/tsmith422/academies-authenticator-bot/assets/143378368/93bbd1e9-00cd-43e4-bfcf-96b6dcbf7129" width="200" height="200"><br>
+  <img src="docs/Cowboy_Rev.png" width="200" height="200" title="Rev Bot" alt="Rev Bot Image"><br>
   <figcaption><em>Profile picture for <code>Rev Bot</code> drawn by TEASO's Maceo Baez</em></figcaption>
 </div>
+
 
 ## Overview
 This is a project that the **Texas Engineering Academies Student Organization (TEASO)** tasked me with doing after I became an officer of the org.
