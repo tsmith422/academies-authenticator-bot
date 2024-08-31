@@ -1,18 +1,14 @@
 import os
 from datetime import datetime
 from typing import Final, Sequence
+from random import choice
 
-# test push
 import discord
 from discord import Intents, Client, Message, Role
 from discord.ext import commands
 from dotenv import load_dotenv
 
 from responses import get_verification
-
-# LOAD TOKEN
-load_dotenv()
-TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
 
 class VerifyModal(discord.ui.Modal):
@@ -44,18 +40,26 @@ class VerifyModal(discord.ui.Modal):
         last = self.children[1].value
         uin = self.children[2].value
 
-        if (
-            first.isalpha()
-            and last.isalpha()
-            and uin.isnumeric()
-        ):
-            await interaction.response.send_message(
-                f"Verified: {first} {last} as {uin}", ephemeral=True
-            )
+        if first.isalpha() and last.isalpha() and uin.isnumeric():
+            response: str = get_verification((first, last, uin))
+            await interaction.response.send_message(f"{response}", ephemeral=True)
         else:
             await interaction.response.send_message(
-                f"Please enter your proper information.", ephemeral=True
+                choice(
+                    [
+                        "Please enter as prompted",
+                        "You may have typed that incorrectly, please try again",
+                        "Can you try retyping your information again",
+                    ]
+                )
+                + ": FIRSTNAME LASTNAME UIN",
+                ephemeral=True,
             )
+
+
+# LOAD TOKEN
+load_dotenv()
+TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
 
 # BOT SETUP
@@ -193,9 +197,9 @@ async def on_message(message: Message) -> None:
     channel: str = str(message.channel)
     roles: list[str] = str(message.author.roles)
 
-    if channel == "✅︱verification":
-        await verify(message, user_message)
-    elif user_message == "!close":
+    # if channel == "✅︱verification":
+    #     await verify(message, user_message)
+    if user_message == "!close":
         await message.delete()
         print(roles)
         if "Officer" in roles:
@@ -221,6 +225,8 @@ async def log_event(event: str) -> None:
 # HANDLING STARTUP FOR BOT
 @client.event
 async def on_ready() -> None:
+    await client.wait_until_ready()
+
     await client.change_presence(activity=discord.Game("Verifying ✅"))
     global bot_log
     bot_log = client.get_channel(bot_log_channel_id)
