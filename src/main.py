@@ -33,7 +33,7 @@ class VerifyModal(discord.ui.Modal):
 
         self.add_item(
             discord.ui.InputText(
-                label="Enter your First Name: ", placeholder="First Name"
+                label="Enter your preferred First Name: ", placeholder="First Name"
             )
         )
         self.add_item(
