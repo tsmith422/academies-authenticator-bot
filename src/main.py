@@ -12,8 +12,10 @@ from responses import get_verification
 
 
 class VerifyModal(discord.ui.Modal):
-    def __init__(self):
+    def __init__(self, author):
         super().__init__(title="Verification")
+
+        self.author = author
 
         self.add_item(
             discord.ui.InputText(
@@ -35,7 +37,6 @@ class VerifyModal(discord.ui.Modal):
         )
 
     async def callback(self, interaction: discord.Interaction):
-
         first = self.children[0].value
         last = self.children[1].value
         uin = self.children[2].value
@@ -43,6 +44,7 @@ class VerifyModal(discord.ui.Modal):
         if first.isalpha() and last.isalpha() and uin.isnumeric():
             response: str = get_verification((first, last, uin))
             await interaction.response.send_message(f"{response}", ephemeral=True)
+            await change_verification(response, (first, last, self.author))
         else:
             await interaction.response.send_message(
                 choice(
@@ -73,28 +75,26 @@ bot_log_channel_id: int = 1242232223147622441
 @client.slash_command()
 async def verify(ctx: discord.ApplicationContext):
     """Shows the verification modal."""
-    modal = VerifyModal()
+    modal = VerifyModal(author=ctx.author)
     await ctx.send_modal(modal)
 
 
 # VERIFICATION FUNCTIONALITY
-async def verify_manually(message: Message, user_info: str) -> None:
+async def change_verification(
+    response: str, user_info: tuple[str, str, discord.Member]
+) -> None:
     """
     Using a student's first name, last name, and uin, they are either verified or unverified
     depending on whether they are part of the verified students list.
-    :param message: Should be the user's First Name, Last Name, and UIN as type Message
+    :param message: Should be the user's First Name, Last Name, and Member name as a tuple[str, str, Member]
     :param user_info: Should be the user's First Name, Last Name, and UIN as type str
     :return: None
     """
-    if not user_info:
-        await log_event(
-            f"(Message was empty because intents were not enabled probably)"
-        )
-        return
+
     try:
-        response: str = get_verification(user_info)
-        member: discord.Member = message.author
-        guild_id: int = message.guild.id
+        # response: str = get_verification(user_info)
+        member: discord.Member = user_info[2]
+        guild_id: int = member.guild.id
         guild_roles: Sequence[Role] = client.get_guild(guild_id).roles
         verified_role: discord.Role = discord.utils.get(
             guild_roles, name="Verified Member"
@@ -102,22 +102,24 @@ async def verify_manually(message: Message, user_info: str) -> None:
         unverified_role: discord.Role = discord.utils.get(
             guild_roles, name="Unverified Member"
         )
-        split_name: list[str] = user_info.split(" ")
 
         if response == "Verified!":
             await remove_role(member, unverified_role)
             await add_role(member, verified_role)
-            await set_nick(member, (split_name[0].title(), split_name[1].title()))
+            await set_nick(member, (user_info[0].title(), user_info[1].title()))
         elif response == "NOT Verified!":
             await remove_role(member, verified_role)
             await add_role(member, unverified_role)
-            await set_nick(member, (split_name[0].title(), split_name[1].title()))
-        await message.channel.send(response, silent=True)
-        await message.delete()
+            await set_nick(member, (user_info[0].title(), user_info[1].title()))
+        # await message.channel.send(response, silent=True)
+        # await message.delete()
     except Exception as e:
-        await log_event(
-            f'Could not verify [{message.author}] due to ``{str(e)[str(e).rindex(":") + 2:]}``'
-        )
+
+        error_message = str(e)
+        error_detail = error_message[error_message.rindex(":") + 2 :]
+        await log_event(f"Could not verify [{member}] due to ``{error_detail}``")
+
+        # await log_event(f"Could not verify [{member}] due to ``{str(e)[str(e).rindex(":") + 2:]}``")
 
 
 # BOT LOGIC TO CHANGE MEMBER'S DETAILS
