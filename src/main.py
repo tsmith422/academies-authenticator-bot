@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
-from typing import Final, Sequence
 from random import choice
+from typing import Final, Sequence
 
 import discord
 from discord import Intents, Client, Message, Role
@@ -11,13 +11,29 @@ from dotenv import load_dotenv
 from responses import get_verification
 
 
+# VERIFY MODAL (FORM) CLASS
 class VerifyModal(discord.ui.Modal):
-    def __init__(self):
+    """
+    A class that creates a modal for users to enter their first name, last name, and UIN
+    to be verified by the bot. The bot will then check if the user is in the verified students
+    list and will either verify or unverify them based on the response.
+    :param author: The author of the message that triggered the modal
+    :return: None
+    """
+
+    def __init__(self, author):
+        """
+        Initializes the VerifyModal class with the author of the message that triggered the modal.
+        :param author: The author of the message that triggered the modal
+        :return: None
+        """
         super().__init__(title="Verification")
+
+        self.author = author
 
         self.add_item(
             discord.ui.InputText(
-                label="Enter your First Name: ", placeholder="First Name"
+                label="Enter your preferred First Name: ", placeholder="First Name"
             )
         )
         self.add_item(
@@ -35,14 +51,21 @@ class VerifyModal(discord.ui.Modal):
         )
 
     async def callback(self, interaction: discord.Interaction):
-
+        """
+        Pulls data entered by users trying to verify and checks whether they
+        should be verified or not.
+        Also ensures that the data entered is in the correct format.
+        :param interaction: The interaction object that triggered the modal
+        :return: None
+        """
         first = self.children[0].value
         last = self.children[1].value
         uin = self.children[2].value
 
         if first.isalpha() and last.isalpha() and uin.isnumeric():
-            response: str = get_verification((first, last, uin))
+            response: str = get_verification((str(first), str(last), str(uin)))
             await interaction.response.send_message(f"{response}", ephemeral=True)
+            await change_verification(response, (first, last, self.author))
         else:
             await interaction.response.send_message(
                 choice(
@@ -61,63 +84,59 @@ class VerifyModal(discord.ui.Modal):
 load_dotenv()
 TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
-
 # BOT SETUP
 intents: Intents = Intents.default()
 intents.message_content = True  # NOQA
 client: Client = commands.Bot(command_prefix="!", intents=intents)
 bot_log: discord.TextChannel = ...
-bot_log_channel_id: int = 1242232223147622441
+bot_log_channel_id: int = 1257438488219881613
 
 
+# SLASH COMMANDS
 @client.slash_command()
-async def verify(ctx: discord.ApplicationContext):
-    """Shows the verification modal."""
-    modal = VerifyModal()
+async def verify(ctx: discord.ApplicationContext) -> None:
+    """
+    Prompts form for members to verify their
+    information.
+    :param ctx: The context of the slash command
+    :return: None
+    """
+    modal = VerifyModal(author=ctx.author)
     await ctx.send_modal(modal)
 
 
 # VERIFICATION FUNCTIONALITY
-async def verify_manually(message: Message, user_info: str) -> None:
+async def change_verification(
+        response: str, user_info: tuple[str, str, discord.Member]
+) -> None:
     """
-    Using a student's first name, last name, and uin, they are either verified or unverified
-    depending on whether they are part of the verified students list.
-    :param message: Should be the user's First Name, Last Name, and UIN as type Message
-    :param user_info: Should be the user's First Name, Last Name, and UIN as type str
+    Changes the verification status of a user based on the response from the verification process
+    along with changing the user's roles and nickname.
+    :param response: The response from the verification process (Verified or NOT Verified)
+    :param user_info: The first name, last name, and discord member of the user
     :return: None
     """
-    if not user_info:
-        await log_event(
-            f"(Message was empty because intents were not enabled probably)"
-        )
-        return
     try:
-        response: str = get_verification(user_info)
-        member: discord.Member = message.author
-        guild_id: int = message.guild.id
+        member: discord.Member = user_info[2]
+        guild_id: int = member.guild.id
         guild_roles: Sequence[Role] = client.get_guild(guild_id).roles
         verified_role: discord.Role = discord.utils.get(
-            guild_roles, name="Verified Member"
+            guild_roles, name="VERIFIED"
         )
         unverified_role: discord.Role = discord.utils.get(
-            guild_roles, name="Unverified Member"
+            guild_roles, name="Unverified"
         )
-        split_name: list[str] = user_info.split(" ")
 
         if response == "Verified!":
             await remove_role(member, unverified_role)
             await add_role(member, verified_role)
-            await set_nick(member, (split_name[0].title(), split_name[1].title()))
+            await set_nick(member, (user_info[0].title(), user_info[1].title()))
         elif response == "NOT Verified!":
             await remove_role(member, verified_role)
             await add_role(member, unverified_role)
-            await set_nick(member, (split_name[0].title(), split_name[1].title()))
-        await message.channel.send(response, silent=True)
-        await message.delete()
+            await set_nick(member, (user_info[0].title(), user_info[1].title()))
     except Exception as e:
-        await log_event(
-            f'Could not verify [{message.author}] due to ``{str(e)[str(e).rindex(":") + 2:]}``'
-        )
+        await log_event(f"Could not verify [{user_info[2]}] due to ``{e}``")
 
 
 # BOT LOGIC TO CHANGE MEMBER'S DETAILS
@@ -194,15 +213,12 @@ async def on_message(message: Message) -> None:
 
     username: str = str(message.author)
     user_message: str = message.content
-    channel: str = str(message.channel)
-    roles: list[str] = str(message.author.roles)
+    # channel: str = str(message.channel)
+    roles: str = str(message.author.roles)
 
-    # if channel == "✅︱verification":
-    #     await verify(message, user_message)
     if user_message == "!close":
         await message.delete()
-        print(roles)
-        if "Officer" in roles:
+        if "OffiStars" in roles:
             await manual_disconnect()
         else:
             await log_event(f"**[{username}]** attempted to shut me down")
@@ -217,16 +233,13 @@ async def log_event(event: str) -> None:
     """
     current_time: datetime = datetime.now()
     global bot_log
-    await bot_log.send(
-        f">>> {event} \n``{current_time:[%m.%d.%y %H:%M]}``", silent=True
-    )
+    await bot_log.send(f">>> {event} \n``{current_time:[%m.%d.%y %H:%M]}``", silent=True)
 
 
 # HANDLING STARTUP FOR BOT
 @client.event
 async def on_ready() -> None:
     await client.wait_until_ready()
-
     await client.change_presence(activity=discord.Game("Verifying ✅"))
     global bot_log
     bot_log = client.get_channel(bot_log_channel_id)
