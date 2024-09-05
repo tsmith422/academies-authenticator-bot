@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
-from typing import Final, Sequence
 from random import choice
+from typing import Final, Sequence
 
 import discord
 from discord import Intents, Client, Message, Role
@@ -55,8 +55,11 @@ class VerifyModal(discord.ui.Modal):
         Pulls data entered by users trying to verify and checks whether they
         should be verified or not.
         Also ensures that the data entered is in the correct format.
+<<<<<<< HEAD
         Example:
         >>> "John Doe 123456789"
+=======
+>>>>>>> bc677d56044950b6627b04cd127fe7a8272b3c44
         :param interaction: The interaction object that triggered the modal
         :return: None
         """
@@ -65,7 +68,7 @@ class VerifyModal(discord.ui.Modal):
         uin = self.children[2].value
 
         if first.isalpha() and last.isalpha() and uin.isnumeric():
-            response: str = get_verification((first, last, uin))
+            response: str = get_verification((str(first), str(last), str(uin)))
             await interaction.response.send_message(f"{response}", ephemeral=True)
             await change_verification(response, (first, last, self.author))
         else:
@@ -91,15 +94,20 @@ intents: Intents = Intents.default()
 intents.message_content = True  # NOQA
 client: Client = commands.Bot(command_prefix="!", intents=intents)
 bot_log: discord.TextChannel = ...
-bot_log_channel_id: int = 1242232223147622441
+bot_log_channel_id: int = 1257438488219881613
 
 
 # SLASH COMMANDS
 @client.slash_command()
 async def verify(ctx: discord.ApplicationContext) -> None:
     """
+<<<<<<< HEAD
     Shows the verification modal for unverified
     members to fill out their information.
+=======
+    Prompts form for members to verify their
+    information.
+>>>>>>> bc677d56044950b6627b04cd127fe7a8272b3c44
     :param ctx: The context of the slash command
     :return: None
     """
@@ -109,7 +117,11 @@ async def verify(ctx: discord.ApplicationContext) -> None:
 
 # VERIFICATION FUNCTIONALITY
 async def change_verification(
+<<<<<<< HEAD
     response: str, user_info: tuple[str, str, discord.Member]
+=======
+        response: str, user_info: tuple[str, str, discord.Member]
+>>>>>>> bc677d56044950b6627b04cd127fe7a8272b3c44
 ) -> None:
     """
     Changes the verification status of a user based on the response from the verification process
@@ -123,10 +135,10 @@ async def change_verification(
         guild_id: int = member.guild.id
         guild_roles: Sequence[Role] = client.get_guild(guild_id).roles
         verified_role: discord.Role = discord.utils.get(
-            guild_roles, name="Verified Member"
+            guild_roles, name="VERIFIED"
         )
         unverified_role: discord.Role = discord.utils.get(
-            guild_roles, name="Unverified Member"
+            guild_roles, name="Unverified"
         )
 
         if response == "Verified!":
@@ -138,9 +150,13 @@ async def change_verification(
             await add_role(member, unverified_role)
             await set_nick(member, (user_info[0].title(), user_info[1].title()))
     except Exception as e:
+<<<<<<< HEAD
         error_message = str(e)
         error_detail = error_message[error_message.rindex(":") + 2 :]
         await log_event(f"Could not verify [{member}] due to ``{error_detail}``")
+=======
+        await log_event(f"Could not verify [{user_info[2]}] due to ``{e}``")
+>>>>>>> bc677d56044950b6627b04cd127fe7a8272b3c44
 
 
 # BOT LOGIC TO CHANGE MEMBER'S DETAILS
@@ -217,12 +233,16 @@ async def on_message(message: Message) -> None:
 
     username: str = str(message.author)
     user_message: str = message.content
-    channel: str = str(message.channel)
-    roles: list[str] = str(message.author.roles)
+    # channel: str = str(message.channel)
+    roles: str = str(message.author.roles)
 
     if user_message == "!close":
         await message.delete()
+<<<<<<< HEAD
         if "Officer" in roles:
+=======
+        if "OffiStars" in roles:
+>>>>>>> bc677d56044950b6627b04cd127fe7a8272b3c44
             await manual_disconnect()
         else:
             await log_event(f"**[{username}]** attempted to shut me down")
@@ -237,16 +257,13 @@ async def log_event(event: str) -> None:
     """
     current_time: datetime = datetime.now()
     global bot_log
-    await bot_log.send(
-        f">>> {event} \n``{current_time:[%m.%d.%y %H:%M]}``", silent=True
-    )
+    await bot_log.send(f">>> {event} \n``{current_time:[%m.%d.%y %H:%M]}``", silent=True)
 
 
 # HANDLING STARTUP FOR BOT
 @client.event
 async def on_ready() -> None:
     await client.wait_until_ready()
-
     await client.change_presence(activity=discord.Game("Verifying ✅"))
     global bot_log
     bot_log = client.get_channel(bot_log_channel_id)

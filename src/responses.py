@@ -10,7 +10,7 @@ SCOPES = [
 
 
 # LOGIC TO SAY WHETHER TO VERIFY A MEMBER
-def get_verification(user_input: tuple[str]) -> str:
+def get_verification(user_input: tuple[str, str, str]) -> str:
     """
     Returns a string saying whether the user should be verified or not.
     :param user_input: Message containing the information needed to verify the member
