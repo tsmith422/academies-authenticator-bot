@@ -68,7 +68,7 @@ intents.message_content = True  # NOQA
 intents.members = True  # Required for Server Members Intent
 client: Client = commands.Bot(command_prefix="!", intents=intents)
 bot_log: discord.TextChannel = ...
-bot_log_channel_id: int = 1242232223147622441
+bot_log_channel_id: int = 1257438488219881613
 events_channel_id: int = 1168646941391978626
 
 
