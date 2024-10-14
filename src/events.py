@@ -31,7 +31,7 @@ def get_event_data(event: dict) -> str:
         event_title: str = event.get('title')
         event_date_formatted: str = event.get('date')
         event_url: str = event.get('url')
-        event_information = (f'>>> ## Event Title: {event_title}\n'
+        event_information = (f'>>> ## {event_title}\n'
                              f'Event Date: ``{event_date_formatted}``\n'
                              f'Event URL: [**{event_title}**]({event_url})')
         return event_information
