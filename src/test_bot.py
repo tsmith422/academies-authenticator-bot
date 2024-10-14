@@ -1,10 +1,10 @@
 import os
 from datetime import datetime, timedelta
 from random import choice
-from typing import Final
+from typing import Final, Sequence
 
 import discord
-from discord import Intents, Client, Message, Sequence, Role
+from discord import Intents, Client, Message, Role
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
@@ -254,24 +254,23 @@ async def send_weekly_events() -> None:
     """
     await client.wait_until_ready()
     channel = client.get_channel(1240438570364174438)
-    current_date: datetime = datetime.now()
-    end_date: datetime = current_date + timedelta(days=1)
+    current_date: datetime = datetime.now() + timedelta(days=1)
+    end_date: datetime = current_date + timedelta(days=6)
     start_date_str = current_date.strftime('%m/%d')
     end_date_str = end_date.strftime('%m/%d')
-    # if current_date.weekday() == 0:  # Check if it's Sunday
-    calendar_url = 'https://calendar.tamu.edu/live/json/events/group/College%20of%20Engineering'
-    json_data = get_json_data(calendar_url)
-    weekly_events = get_weekly_events(json_data)
+    if current_date.weekday() == 0:  # Check if it's Sunday
+        calendar_url = 'https://calendar.tamu.edu/live/json/events/group/College%20of%20Engineering'
+        json_data = get_json_data(calendar_url)
+        weekly_events = get_weekly_events(json_data)
 
-    if weekly_events:
         await channel.send(f">>> # Upcoming Events for the Week:\n"
                            f"## `{start_date_str} - {end_date_str}`\n", silent=True)
-        for event in weekly_events:
-            event_information = get_event_data(event)
-            await channel.send(event_information, silent=True)
-    else:
-        await channel.send("No upcoming events for the week.", silent=True)
-    # End indent
+        if weekly_events:
+            for event in weekly_events:
+                event_information = get_event_data(event)
+                await channel.send(event_information, silent=True)
+        else:
+            await channel.send(">>> ## No upcoming events for the week.", silent=True)
 
 
 # MAIN ENTRY POINT

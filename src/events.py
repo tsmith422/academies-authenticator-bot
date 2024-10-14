@@ -16,7 +16,7 @@ def get_json_data(url: str) -> list[dict[str]]:
 def get_weekly_events(event_list: list[dict[str]]) -> list[dict[str]]:
     weekly_events: list[dict[str]] = []
     current_date: datetime = datetime.now()
-    end_date: datetime = current_date + timedelta(days=1)
+    end_date: datetime = current_date + timedelta(days=7)
 
     for event in event_list:
         event_date: datetime = datetime.strptime(event.get('date_utc', '').split(' ')[0], '%Y-%m-%d')

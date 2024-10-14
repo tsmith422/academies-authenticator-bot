@@ -1,13 +1,14 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from random import choice
 from typing import Final, Sequence
 
 import discord
 from discord import Intents, Client, Message, Role
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
+from events import get_json_data, get_weekly_events, get_event_data
 from responses import get_verification
 
 
@@ -28,27 +29,11 @@ class VerifyModal(discord.ui.Modal):
         :return: None
         """
         super().__init__(title="Verification")
-
         self.author = author
-
+        self.add_item(discord.ui.InputText(label="Enter your preferred First Name: ", placeholder="First Name"))
+        self.add_item(discord.ui.InputText(label="Enter your Last Name: ", placeholder="Last Name"))
         self.add_item(
-            discord.ui.InputText(
-                label="Enter your preferred First Name: ", placeholder="First Name"
-            )
-        )
-        self.add_item(
-            discord.ui.InputText(
-                label="Enter your Last Name: ", placeholder="Last Name"
-            )
-        )
-        self.add_item(
-            discord.ui.InputText(
-                label="Enter your UIN: ",
-                placeholder="Ex: 123456789",
-                min_length=9,
-                max_length=9,
-            )
-        )
+            discord.ui.InputText(label="Enter your UIN: ", placeholder="Ex: 123456789", min_length=9, max_length=9))
 
     async def callback(self, interaction: discord.Interaction):
         """
@@ -61,21 +46,14 @@ class VerifyModal(discord.ui.Modal):
         first = self.children[0].value
         last = self.children[1].value
         uin = self.children[2].value
-
         if first.isalpha() and last.isalpha() and uin.isnumeric():
             response: str = get_verification((str(first), str(last), str(uin)))
             await interaction.response.send_message(f"{response}", ephemeral=True)
             await change_verification(response, (first, last, self.author))
         else:
             await interaction.response.send_message(
-                choice(
-                    [
-                        "Please enter as prompted",
-                        "You may have typed that incorrectly, please try again",
-                        "Can you try retyping your information again",
-                    ]
-                )
-                + ": FIRSTNAME LASTNAME UIN",
+                choice(["Please enter as prompted", "You may have typed that incorrectly, please try again",
+                        "Can you try retyping your information again"]) + ": FIRSTNAME LASTNAME UIN",
                 ephemeral=True,
             )
 
@@ -87,9 +65,11 @@ TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 # BOT SETUP
 intents: Intents = Intents.default()
 intents.message_content = True  # NOQA
+intents.members = True  # Required for Server Members Intent
 client: Client = commands.Bot(command_prefix="!", intents=intents)
 bot_log: discord.TextChannel = ...
-bot_log_channel_id: int = 1257438488219881613
+bot_log_channel_id: int = 1242232223147622441
+events_channel_id: int = 1168646941391978626
 
 
 # SLASH COMMANDS
@@ -106,9 +86,7 @@ async def verify(ctx: discord.ApplicationContext) -> None:
 
 
 # VERIFICATION FUNCTIONALITY
-async def change_verification(
-        response: str, user_info: tuple[str, str, discord.Member]
-) -> None:
+async def change_verification(response: str, user_info: tuple[str, str, discord.Member]) -> None:
     """
     Changes the verification status of a user based on the response from the verification process
     along with changing the user's roles and nickname.
@@ -258,18 +236,52 @@ async def on_close() -> None:
 
 
 async def manual_disconnect() -> None:
+    """
+    Handles manual disconnection of the bot.
+    :return: None
+    """
     try:
-        await log_event(
-            f"### [{str(client.user)[:-5]}] is now disconnected from client"
-        )
+        await log_event(f"### [{str(client.user)[:-5]}] is now disconnected from client")
     except Exception as e:
         await log_event(f"{e}")
     await client.close()
 
 
+@tasks.loop(hours=24)
+async def send_weekly_events() -> None:
+    """
+    Sends a message of the upcoming weekly events every week to a specified channel.
+    :return: None
+    """
+    await client.wait_until_ready()
+    channel = client.get_channel(events_channel_id)
+    current_date: datetime = datetime.now() + timedelta(days=1)
+    end_date: datetime = current_date + timedelta(days=6)
+    start_date_str = current_date.strftime('%m/%d')
+    end_date_str = end_date.strftime('%m/%d')
+    if current_date.weekday() == 0:  # Check if it's Sunday
+        calendar_url = 'https://calendar.tamu.edu/live/json/events/group/College%20of%20Engineering'
+        json_data = get_json_data(calendar_url)
+        weekly_events = get_weekly_events(json_data)
+
+        await channel.send(f">>> # Upcoming Events for the Week:\n"
+                           f"## `{start_date_str} - {end_date_str}`\n", silent=True)
+        if weekly_events:
+            for event in weekly_events:
+                event_information = get_event_data(event)
+                await channel.send(event_information, silent=True)
+        else:
+            await channel.send(">>> ## No upcoming events for the week.", silent=True)
+
+
 # MAIN ENTRY POINT
 def main() -> None:
-    client.run(token=TOKEN)
+    """
+    Main entry point for the bot.
+    :return: None
+    """
+    send_weekly_events.start()
+    client.run(TOKEN)
 
 
 if __name__ == "__main__":
